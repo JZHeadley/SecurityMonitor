@@ -1,27 +1,26 @@
 extern crate inotify;
 
 
-use std::env;
-
 use inotify::{
-    event_mask,
-    watch_mask,
+    EventMask,
     Inotify,
+    WatchMask,
 };
+use std::env;
+use std::path::PathBuf;
 
 
 fn main() {
     let mut inotify = Inotify::init()
         .expect("Failed to initialize inotify");
 
-    let current_dir = env::current_dir()
-        .expect("Failed to determine current directory");
+    let current_dir = PathBuf::from("/home/ytpillai/test_rust");
 
     inotify
         .add_watch(
             current_dir,
-            watch_mask::MODIFY | watch_mask::CREATE | watch_mask::DELETE,
-            )
+            WatchMask::ALL_EVENTS,
+        )
         .expect("Failed to add inotify watch");
 
     println!("Watching current directory for activity...");
@@ -33,32 +32,30 @@ fn main() {
             .expect("Failed to read inotify events");
 
         for event in events {
-            if event.mask.contains(event_mask::CREATE) {
-                if event.mask.contains(event_mask::ISDIR) {
+            if event.mask.contains(EventMask::CREATE) {
+                if event.mask.contains(EventMask::ISDIR) {
                     println!("Directory created: {:?}", event.name);
                 } else {
                     println!("File created: {:?}", event.name);
                 }
-            } else if event.mask.contains(event_mask::DELETE) {
-                if event.mask.contains(event_mask::ISDIR) {
+            } else if event.mask.contains(EventMask::DELETE) {
+                if event.mask.contains(EventMask::ISDIR) {
                     println!("Directory deleted: {:?}", event.name);
                 } else {
                     println!("File deleted: {:?}", event.name);
                 }
-            } else if event.mask.contains(event_mask::MODIFY) {
-                if event.mask.contains(event_mask::ISDIR) {
+            } else if event.mask.contains(EventMask::CLOSE_NOWRITE) {
+                if event.mask.contains(EventMask::ISDIR) {
+                    println!("Directory modified: {:?}", event.name);
+                } else {
+                    println!("File modified: {:?} {:?}", event.name, event.wd);
+                }
+            } else if event.mask.contains(EventMask::MODIFY) {
+                if event.mask.contains(EventMask::ISDIR) {
                     println!("Directory modified: {:?}", event.name);
                 } else {
                     println!("File modified: {:?}", event.name);
                 }
-            } else if event.mask.contains(event_mask::ATTRIB) {
-                println!("{:?}",event.wd);
-                println!("{:?}",event.mask);
-                println!("{:?}",event.cookie);
-                println!("{:?}",event.name);
-            }else{
-                println!("blah {:?}",event.mask);
-
             }
         }
     }
