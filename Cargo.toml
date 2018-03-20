@@ -4,4 +4,4 @@ version = "0.0.1"
 authors = [ "Zephyr Headley <headleyjz@vcu.edu>" ]
 
 [dependencies]
-inotify = "0.5.1"
+inotify = "0.4"
