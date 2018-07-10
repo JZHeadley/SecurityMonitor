@@ -6,7 +6,6 @@ use inotify::{
     Inotify,
     WatchMask,
 };
-use std::env;
 use std::path::PathBuf;
 
 
@@ -14,7 +13,8 @@ fn main() {
     let mut inotify = Inotify::init()
         .expect("Failed to initialize inotify");
 
-    let current_dir = PathBuf::from("/home/ytpillai/test_rust");
+    const FILE_OR_DIR_PATH: &str = "/home/ytpillai/test_rust";
+    let current_dir = PathBuf::from(FILE_OR_DIR_PATH);
 
     inotify
         .add_watch(
@@ -32,29 +32,50 @@ fn main() {
             .expect("Failed to read inotify events");
 
         for event in events {
-            if event.mask.contains(EventMask::CREATE) {
-                if event.mask.contains(EventMask::ISDIR) {
-                    println!("Directory created: {:?}", event.name);
-                } else {
-                    println!("File created: {:?}", event.name);
-                }
-            } else if event.mask.contains(EventMask::DELETE) {
-                if event.mask.contains(EventMask::ISDIR) {
-                    println!("Directory deleted: {:?}", event.name);
-                } else {
-                    println!("File deleted: {:?}", event.name);
-                }
-            } else if event.mask.contains(EventMask::CLOSE_NOWRITE) {
+            println!("{:?}", event.mask);
+            if event.mask.contains(EventMask::MODIFY) {
                 if event.mask.contains(EventMask::ISDIR) {
                     println!("Directory modified: {:?}", event.name);
                 } else {
                     println!("File modified: {:?} {:?}", event.name, event.wd);
+                    let absolute_file_path;
+                    match event.name {
+                        Some(name) => {
+                            let file_name_str = name.to_str(); //OsStr maynot be converted directly to str
+
+                            match file_name_str {
+                                Some(nameStr) => absolute_file_path = format!("{}/{}", FILE_OR_DIR_PATH, nameStr),
+                                None => absolute_file_path = format!("Could not get filename in {} because it is not convertable to a normal string.", FILE_OR_DIR_PATH),
+                            }
+                        }
+                        None => {
+                            absolute_file_path = FILE_OR_DIR_PATH.to_string();
+                        }
+                    }
+
+                    println!("{:?}", absolute_file_path);
                 }
-            } else if event.mask.contains(EventMask::MODIFY) {
+            } else if event.mask.contains(EventMask::CLOSE_NOWRITE) {
                 if event.mask.contains(EventMask::ISDIR) {
-                    println!("Directory modified: {:?}", event.name);
+                    println!("Directory nowrite: {:?}", event.name);
                 } else {
-                    println!("File modified: {:?}", event.name);
+                    println!("File nowrite: {:?} {:?}", event.name, event.wd);
+                    let absolute_file_path;
+                    match event.name {
+                        Some(name) => {
+                            let file_name_str = name.to_str(); //OsStr maynot be converted directly to str
+
+                            match file_name_str {
+                                Some(nameStr) => absolute_file_path = format!("{}/{}", FILE_OR_DIR_PATH, nameStr),
+                                None => absolute_file_path = format!("Could not get filename in {} because it is not convertable to a normal string.", FILE_OR_DIR_PATH)
+                            }
+                        }
+                        None => {
+                            absolute_file_path = FILE_OR_DIR_PATH.to_string();
+                        }
+                    }
+
+                    println!("{:?}", absolute_file_path);
                 }
             }
         }
